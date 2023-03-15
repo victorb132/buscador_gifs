@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'package:buscador_gifs/src/screens/gif_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_share/flutter_share.dart';
 import 'package:http/http.dart' as http;
+import 'package:transparent_image/transparent_image.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   Future<Map> _getGifs() async {
     http.Response response;
 
-    if (_search == null) {
+    if (_search == null || _search!.isEmpty) {
       response = await http.get(Uri.parse(
           "https://api.giphy.com/v1/gifs/trending?api_key=q79hSSHqpJRaLvPd41ptw6IGS76iXs8W&limit=25&rating=g"));
     } else {
@@ -112,11 +115,23 @@ class _HomePageState extends State<HomePage> {
       itemBuilder: (context, index) {
         if (_search == null || index < snapshot.data["data"].length) {
           return GestureDetector(
-            child: Image.network(
-              snapshot.data["data"][index]["images"]["fixed_height"]["url"],
+            child: FadeInImage.memoryNetwork(
+              placeholder: kTransparentImage,
+              image: snapshot.data["data"][index]["images"]["fixed_height"]
+                  ["url"],
               height: 300,
               fit: BoxFit.cover,
             ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GifPage(
+                    gifData: snapshot.data["data"][index],
+                  ),
+                ),
+              );
+            },
           );
         } else {
           return Container(
@@ -143,10 +158,23 @@ class _HomePageState extends State<HomePage> {
                   _offset += 19;
                 });
               },
+              onLongPress: () {
+                share(snapshot.data['data'][index]['images']['fixed_height']
+                        ['url']
+                    .toString());
+              },
             ),
           );
         }
       },
     );
+  }
+
+  Future<void> share(String link) async {
+    await FlutterShare.share(
+        title: 'Compartilhar Gif',
+        text: 'Compartilhe com quem desejar essa gif...',
+        linkUrl: link,
+        chooserTitle: null);
   }
 }
